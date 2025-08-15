@@ -241,6 +241,36 @@ Happens inside the DB after a query arrives, so the DB still sees the request bu
 
 Rely on database caching for automatic speedups, but not as your main scaling strategy. It's still bound by DB capacity.
 
+### Eviction Policies (deciding what to remove when cache is full)
+
+| Policy | How it works | When to use |
+|--------|--------------|-------------|
+| **LRU** (Least Recently Used) | Removes the item that hasn’t been accessed for the longest time. | General-purpose, good when recent access predicts future access. |
+| **LFU** (Least Frequently Used) | Removes the item with the lowest access count. | Good for items that stay popular over time. |
+| **FIFO** (First In, First Out) | Removes the oldest inserted item. | Simple, but may evict still-hot items. |
+| **MRU** (Most Recently Used) | Removes the most recently accessed item. | Rare, useful if recent items are less likely to be used again (edge cases). |
+| **Random** | Evicts a random item. | Useful for simplicity in large, distributed caches. |
+| **TTL-based** | Items expire after a fixed time-to-live. | For data with predictable staleness bounds. |
+
+
+### Write Strategies (how cache interacts with the backing store)
+
+| Strategy | How it works | Trade-offs |
+|----------|--------------|------------|
+| **Write-through** | Write to cache and DB at the same time. | Data is always in sync, but slower writes. |
+| **Write-back (write-behind)** | Write to cache first, flush to DB later. | Faster writes, risk of data loss if cache fails before flush. |
+| **Write-around** | Write to DB, skip cache; cache only on read. | Avoids caching rarely used writes, but first read will be slow. |
+
+
+### Read Strategies (how cache is filled)
+
+| Strategy | How it works | Trade-offs |
+|----------|--------------|------------|
+| **Cache-aside (lazy loading)** | App checks cache → if miss, fetch from DB and put in cache. | Popular & simple; cache only stores hot data, but first read is slow. |
+| **Read-through** | Cache automatically loads from DB on miss. | Transparent to app, but requires integrated cache layer. |
+| **Refresh-ahead** | Cache refreshes items before they expire. | Avoids latency spikes on expiration, but may cache unused items. |
+
+
 ### CDN
 Network of servers distributed geographically, generally used to serve static content such as JS, HTML, CSS, image, video files. They cache the content from the original server and deliver it to users from the nearest CDN server.
 
@@ -320,3 +350,71 @@ To avoid or minimize a load balancer goes down we have several strategies:
 - Auto-scaling & self healing systems: Automatically detect the failure of load balancers and replace with a new instance without manual intervention.
 
 ## Databases
+
+### Relational databases
+- great for transactions, complex queries, and integrity
+- ACID compliant -> they maintain the ACID properties
+    - A: atomicity, transactions are all or nothing
+    - C: consistency, after a transaction your database should be in a consistent state
+    - I: isolation, transactions should be independent
+    - D: durability, once transaction is comitted the data is there to stay
+
+### NoSQL Databases
+- The consistency property is dropped from the ACID
+- MongoDB, Cassandra, Redis, DynamoDB, Cosmos
+
+Types of NoSQL databases:
+- Key value pairs (Redis)
+- Document based (MongoDB)
+- Graph based (neo4j)
+
+NoSQL databases are schemaless which means they dont have FK between tables which link the data together.
+They are glued for unstructured data.
+
+Ideal for:
+- scalability, quick iteration, and simple queries
+
+### In-memory databases
+It's fast because everything is in memory.
+
+Very fast data-retrieval. Primarily used for caching and session-storage.
+
+Redis and mem-cache are some examples.
+
+### Vertical Scaling
+Also called scale up. Improve the performance of your database, by enhancing the capabilities of the server where your DB is running. Very limited, because there is a maximum limited to the resources you can add to a single machine.
+
+1. Increase CPU power
+2. Add more RAM
+3. Add more disk storage
+4. upgrade network
+
+### Horizontal scaling
+Also called scale out. Add more machines to the existing pool for resources.
+
+#### Database sharding
+Distributing different portions/shards of the dataset across multiple servers.
+
+Sharding strategies:
+- Range-based sharding: Distribute data based on the range of a given key
+- Directory-based sharding: Lookup service to direct traffic to the database.
+- Geographical sharding: Split databses based on geographical locations.
+
+#### Replication
+Keep copies of data on multiple servers for high availability.
+
+Master-slave replication:
+1. You have one master and several slaves
+2. Master is responsible for read/write
+3. Slaves are read only
+4. When new data comes in it writes to the master and then that is copied over to the slaves
+
+Master-master replication:
+1. Multiple databases that can both read and write.
+
+#### Database performance
+Scaling your database is one thing, but you also need to access the data faster. 
+
+- Caching. Cache frequent queries with in Redis to boost performance.
+- Indexing. Create index for frequently accessed columns to speed up retrieval times.
+- Query optimization. Minimize joins, one way is to denormalize.
