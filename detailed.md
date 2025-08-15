@@ -191,7 +191,7 @@ That's why it's crucial to invest resources and time into getting the design rig
 How computers communicate with each other.
 
 The internet works in layers.
-1. Application Protocol (HTTP, HTTPS, SMTP)
+1. Application Protocol (HTTP, HTTPS, SMTP). Rules for how specific types of apps talk over the internet.
 2. Transport layer (TCP, UDP). Move data from one computer to another.
 3. Internet Protocol (IP). Where to send data?
 
@@ -217,7 +217,106 @@ Some ports are reserved for specific protocols like:
 - SSH: 20
 - MYSQL: 3306
 
+## Application Protocols
+Rules for how specific types of apps talk over the internet. Every app or service on the internet needs a common language so both sides know what the data means. An application protocol defines that language for a particular job.
 
+This is basically the "languages" apps use to exchange information after TCP or UDP has delivered the data between devices.
 
+### Remote Procedure Call (RPC)
+A protocol that allows a program on one computer to execute code on another computer/server. Method to invoke a function as if it were a local call, when in reality the function is executed on a remote machine. 
 
+## Caching
+Benefits of caching:
+- reduced latency
+- lowered server load
+- improved ux
 
+### Server caching
+Happens before hitting the database, so it can skip DB queries entirely.
+
+Use server caching when you want full control and to reduce DB calls completely.
+
+### Database caching
+Happens inside the DB after a query arrives, so the DB still sees the request but may serve it faster.
+
+Rely on database caching for automatic speedups, but not as your main scaling strategy. It's still bound by DB capacity.
+
+### CDN
+Network of servers distributed geographically, generally used to serve static content such as JS, HTML, CSS, image, video files. They cache the content from the original server and deliver it to users from the nearest CDN server.
+
+This leads to reduced latency, high availability and improved security (DDOS protection and traffic encryption).
+
+## Proxy Server
+Acts as an intermediary between a client requesting a resource and a server that returns a response.
+
+Purposes:
+- caching resources
+- anonymizing requests
+- load balancing
+
+### Types of proxy servers
+- forward proxy
+- reverse proxy (NGINX)
+    - load balancers
+    - CDNs
+    - Firewalls (WAFs)
+    - SSL offloading (some reverse proxies handle the encryption and decryption of SSL and TLS traffic)
+
+## Load Balancers
+Distribute incoming traffic across multiple servers to make sure that no server bears too much load. By spreading the request effectively they increase the capacity and reliability of applications.
+
+### Strategies
+
+#### Round Robin
+The simplest form of load balancing. Each server in the pool gets the request in sequential order.
+Evenly distribute.
+
+#### Least Connection
+Send the request to the server with the least active connections.
+Ideal for longer tasks and when the server load is not evenly distributed.
+
+#### Least Response Time
+Chooses the server with the lowest response time and fewest active connections.
+The goal is to provide the fastest response to request.
+
+#### IP Hashing
+Determines which server gets the request based on the hash of the clients IP adress.
+Ensures the client connects to the same server and is useful for session persistence, in applications where it's important that the clients connect to the same server.
+
+#### Weighted algorithms
+These methods can also be weighted. Servers are assigned weights, typically based on their capacity or performance metrics.
+The servers which are more capable handle more requests. This is effective if the servers in the pool have different capabilities.
+
+#### Geographic
+Directs requests to the server geographically closest to the user. Useful for global services where latency reduction is a priority.
+
+#### Consistent Hashing
+Consistent hashing spreads requests or data across servers so that when servers are added or removed, only a small portion of the mappings change, reducing disruption.
+
+### Health Checks
+An essential feature of load balancers is continous health checking of servers. To ensure traffic is only directed to servers that are all online and responsive.
+If a server fails, the load balancer will stop sending traffic to it until it is back online. 
+
+## Types of load balancers
+
+### Software load balancers
+- HAPROXY
+- NGINX
+
+### Cloud based load balancers
+- AWS Elastic Load Balancing
+- Microsoft Azure Load Balancer
+- Google Cloud Load Balancer 
+
+### What happens when a load balancer goes down?
+When the load balancer goes down it can impact the whole availability and performance of the application.
+
+It's a single point of failure, if it goes down all the services become unavailable for the clients.
+
+To avoid or minimize a load balancer goes down we have several strategies: 
+
+- Redundancy: Add another load balancer. If one of them fails, the other one takes over (failover).
+-  Health checks & monitoring: Detect & adress issues early before causing signifcant disruption.
+- Auto-scaling & self healing systems: Automatically detect the failure of load balancers and replace with a new instance without manual intervention.
+
+## Databases
